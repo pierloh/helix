@@ -478,6 +478,7 @@ pub enum KittyKeyboardProtocolConfig {
 #[serde(rename_all = "kebab-case")]
 pub enum KittyMultiCursorConfig {
     #[default]
+    Auto,
     Disabled,
     Enabled,
 }
