@@ -117,7 +117,14 @@ impl TerminaBackend {
         capabilities.kitty_multi_cursor = match config.kitty_multi_cursor {
             KittyMultiCursorConfig::Disabled => false,
             KittyMultiCursorConfig::Enabled => true,
-            KittyMultiCursorConfig::Auto => super::probe_multi_cursor_support(),
+            KittyMultiCursorConfig::Auto => {
+                write!(
+                    terminal,
+                    "{}",
+                    Csi::Cursor(csi::Cursor::QueryCursorShape)
+                )?;
+                false
+            }
         };
 
         // Many terminal extensions can be detected by querying the terminal for the state of the
@@ -171,6 +178,11 @@ impl TerminaBackend {
                     }
                     Event::Csi(Csi::Mode(csi::Mode::ReportTheme(mode))) => {
                         capabilities.theme_mode = Some(mode.into());
+                    }
+                    Event::Csi(Csi::Cursor(
+                        csi::Cursor::CursorShapeQueryResponse(caps),
+                    )) => {
+                        capabilities.kitty_multi_cursor = !caps.is_empty();
                     }
                     Event::Osc(Osc::ChangeDynamicColors(
                         osc::DynamicColorNumber::TextBackgroundColor,
@@ -384,7 +396,11 @@ impl TerminaBackend {
         }
 
         if self.capabilities.kitty_multi_cursor {
-            self.write_raw(b"\x1b[>0 q")?;
+            write!(
+                self.terminal,
+                "{}",
+                Csi::Cursor(csi::Cursor::ClearSecondaryCursors)
+            )?;
         }
 
         if self.capabilities.theme_mode.is_some() {
@@ -664,7 +680,31 @@ impl Backend for TerminaBackend {
         if !self.capabilities.kitty_multi_cursor {
             return Ok(());
         }
-        self.write_raw(&super::build_multi_cursor_sequence(cursors))
+        if cursors.is_empty() {
+            write!(
+                self.terminal,
+                "{}",
+                Csi::Cursor(csi::Cursor::ClearSecondaryCursors)
+            )
+        } else {
+            let positions = cursors
+                .iter()
+                .map(|&(row, col)| {
+                    (
+                        OneBased::from_zero_based(row),
+                        OneBased::from_zero_based(col),
+                    )
+                })
+                .collect();
+            write!(
+                self.terminal,
+                "{}",
+                Csi::Cursor(csi::Cursor::SetMultipleCursors {
+                    shape: csi::MultiCursorShape::FollowMainCursor,
+                    positions,
+                })
+            )
+        }
     }
 }
 
