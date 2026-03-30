@@ -351,17 +351,11 @@ impl Application {
         for range in selection.ranges() {
             let cursor_pos = range.cursor(text);
             if let Some(pos) = view.screen_coords_at_pos(doc, text, cursor_pos) {
-                if pos.row < inner.height as usize && pos.col < inner.width as usize {
-                    cursors.push((
-                        pos.row as u16 + inner.y,
-                        pos.col as u16 + inner.x,
-                    ));
-                }
+                cursors.push((
+                    pos.row as u16 + inner.y,
+                    pos.col as u16 + inner.x,
+                ));
             }
-        }
-        if cursors.len() > 64 {
-            debug!("Truncating {} multi-cursors to protocol max of 64", cursors.len());
-            cursors.truncate(64);
         }
         cursors
     }

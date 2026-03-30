@@ -232,7 +232,7 @@ where
     fn restore(&mut self) -> io::Result<()> {
         // Clear kitty multi-cursor protocol state (harmless on unsupported terminals).
         if self.supports_multi_cursor_protocol() {
-            self.write_raw(b"\x1b[>0 q")?;
+            self.write_raw(b"\x1b[>0;4 q")?;
         }
         // reset cursor shape
         self.buffer

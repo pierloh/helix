@@ -64,7 +64,7 @@ pub trait Backend {
 /// with 1-indexed point coordinates.
 fn build_multi_cursor_sequence(cursors: &[(u16, u16)]) -> Vec<u8> {
     if cursors.is_empty() {
-        return b"\x1b[>0 q".to_vec();
+        return b"\x1b[>0;4 q".to_vec();
     }
     let mut buf = Vec::with_capacity(8 + cursors.len() * 12);
     buf.extend_from_slice(b"\x1b[>29");
@@ -80,6 +80,8 @@ fn build_multi_cursor_sequence(cursors: &[(u16, u16)]) -> Vec<u8> {
 /// On platforms using the crossterm backend (Windows), this always returns false
 /// since the raw probe requires unix TTY access. The termina backend uses its own
 /// event-based detection via QueryCursorShape instead of this function.
+/// Windows users with a supporting terminal (e.g. custom Alacritty) can use
+/// `kitty-multi-cursor = "enabled"` to bypass auto-detection.
 #[cfg(all(feature = "termina", windows))]
 pub(super) fn probe_multi_cursor_support() -> bool {
     log::debug!("Multi-cursor probe not supported on this platform");
