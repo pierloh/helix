@@ -654,6 +654,7 @@ impl Backend for TerminaBackend {
         if !self.capabilities.dynamic_background_color {
             return Ok(());
         }
+        let was_set = self.background_color.is_some();
         self.background_color = match color {
             Some(Color::Rgb(r, g, b)) => Some(RgbColor::new(r, g, b)),
             _ => None,
@@ -667,8 +668,14 @@ impl Backend for TerminaBackend {
                     vec![color.into()]
                 )
             )
-        } else {
+        } else if was_set {
+            // Only reset if we previously set a custom color. Resetting
+            // when no color was set sends the queried "original" color
+            // back to the terminal, which in multiplexers sets an explicit
+            // pane bg that makes cells opaque instead of transparent.
             self.reset_background_color()
+        } else {
+            Ok(())
         }
     }
 
